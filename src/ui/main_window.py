@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("TeslaDashcam")
+        self.setWindowTitle("Tesla Dashcam - Put Timestamp")
         self.setMinimumSize(800, 600)
         self.file_handler = FileHandler()
         self.video_processor = VideoProcessor()
