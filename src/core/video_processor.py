@@ -31,7 +31,6 @@ def process_video(
         ff = FfmpegProgress(cmd)
         for progress in ff.run_command_with_progress():
             queue.put((camera, int(progress)))
-        queue.put((camera, 100))
     except Exception as e:
         logger.error("Error converting %s: %s", input_file, e)
         queue.put((camera, 100))  # Signal completion even on error
