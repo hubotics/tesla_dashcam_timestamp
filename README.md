@@ -1,4 +1,4 @@
-# TeslaDashcam
+# tesla_dashcam_timestamp
 
 **Version: v0.1.1**
 
