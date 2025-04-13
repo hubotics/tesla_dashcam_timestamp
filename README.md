@@ -2,7 +2,7 @@
 
 **Version: v0.1.1**
 
-TeslaDashcam is a Python application designed to process Tesla dashcam video files by overlaying timestamps using FFmpeg. It provides a user-friendly GUI built with PySide6, allowing users to select input directories, view grouped video files, and convert them in parallel with real-time progress updates.
+tesla_dash_cam is a Python application designed to process Tesla dashcam video files by overlaying timestamps using FFmpeg. It provides a user-friendly GUI built with PySide6, allowing users to select input directories, view grouped video files, and convert them in parallel with real-time progress updates.
 
 ## Features
 
@@ -36,7 +36,7 @@ pip install PySide6 ffmpeg-progress-yield
 Clone or download the repository, then navigate to the project directory:
 
 ```bash
-cd TeslaDashcam
+cd tesla_dash_cam
 ```
 
 
@@ -60,7 +60,7 @@ python src/main.py
 ## Directory Structure
 
 ```text
-TeslaDashcam/
+tesla_dash_cam/
 ├── src/
 │   ├── core/
 │   │   └── video_processor.py
@@ -75,7 +75,7 @@ TeslaDashcam/
 
 ## Screenshots
 
-Below are screenshots showcasing the TeslaDashcam application in action:
+Below are screenshots showcasing the tesla_dash_cam application in action:
 
 - **File Selection**: Displays the list of timestamp-grouped video files available for selection in the chosen directory.
   ![File Selection](screenshots/file_selection.png)
