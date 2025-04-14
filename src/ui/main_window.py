@@ -1,7 +1,8 @@
 from pathlib import Path
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QFileDialog, QListWidget, QProgressBar, QLabel, QGridLayout
+    QMainWindow, QWidget, QVBoxLayout, QPushButton,
+    QFileDialog, QListWidget, QProgressBar, QLabel, QGridLayout, QSizePolicy,
+    QMessageBox
 )
 from utils.file_handler import FileHandler
 from core.video_processor import VideoProcessor
@@ -15,11 +16,12 @@ logger = logging.getLogger(__name__)
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Tesla Dashcam - Put Timestamp")
+        self.setWindowTitle("Tesla Dashcam - Put Timestamp v0.1.2")
         self.setMinimumSize(800, 600)
         self.file_handler = FileHandler()
         self.video_processor = VideoProcessor()
         self.input_dir: Path | None = None
+        self.output_dir: Path | None = None
         self.conversion_count = 0
         self.completed_cameras: set[str] = set()
         self.missing_cameras: set[str] = set()
@@ -32,10 +34,26 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
 
-        # Input directory selection
-        dir_layout = QHBoxLayout()
-        self.dir_button = QPushButton("Select Input Directory")
-        dir_layout.addWidget(self.dir_button)
+        # Directory selection
+        dir_layout = QGridLayout()
+
+        # Input directory
+        self.input_dir_button = QPushButton("Select")
+        self.input_dir_button.setFixedWidth(80)
+        self.input_dir_label = QLabel("No directory selected")
+        self.input_dir_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        dir_layout.addWidget(QLabel("Input Directory:"), 0, 0)
+        dir_layout.addWidget(self.input_dir_button, 0, 1)
+        dir_layout.addWidget(self.input_dir_label, 0, 2)
+
+        # Output directory
+        self.output_dir_button = QPushButton("Select")
+        self.output_dir_button.setFixedWidth(80)
+        self.output_dir_label = QLabel("No directory selected")
+        self.output_dir_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        dir_layout.addWidget(QLabel("Output Directory:"), 1, 0)
+        dir_layout.addWidget(self.output_dir_button, 1, 1)
+        dir_layout.addWidget(self.output_dir_label, 1, 2)
         main_layout.addLayout(dir_layout)
 
         # File list
@@ -70,20 +88,40 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(self.status_layout)
 
     def connect_signals(self):
-        self.dir_button.clicked.connect(self.select_directory)
+        self.input_dir_button.clicked.connect(self.select_input_directory)
+        self.output_dir_button.clicked.connect(self.select_output_directory)
         self.file_list.itemSelectionChanged.connect(self.update_convert_button)
         self.convert_button.clicked.connect(self.start_conversion)
         self.video_processor.progress_updated.connect(self.update_progress)
         self.video_processor.conversion_finished.connect(self.on_conversion_finished)
         self.video_processor.missing_file_detected.connect(self.on_missing_file)
 
-    def select_directory(self):
-        dir_path = QFileDialog.getExistingDirectory(self, "Select Directory")
+    def select_input_directory(self):
+        dir_path = QFileDialog.getExistingDirectory(self, "Select Input Directory")
         if dir_path:
             self.input_dir = Path(dir_path)
+            self.input_dir_label.setText(str(self.input_dir))
             self.current_timestamp = None
             self.reset_status()
             self.populate_file_list()
+            self.update_convert_button()
+
+    def select_output_directory(self):
+        dir_path = QFileDialog.getExistingDirectory(self, "Select Output Directory")
+        if dir_path:
+            output_path = Path(dir_path)
+            if self.input_dir and output_path == self.input_dir:
+                QMessageBox.warning(
+                    self,
+                    "Warning",
+                    "Output directory cannot be the same as input directory",
+                    QMessageBox.Ok
+                )
+                self.select_output_directory()
+                return
+            self.output_dir = output_path
+            self.output_dir_label.setText(str(self.output_dir))
+            self.update_convert_button()
 
     def populate_file_list(self):
         self.file_list.clear()
@@ -95,14 +133,15 @@ class MainWindow(QMainWindow):
 
     def update_convert_button(self):
         selected = bool(self.file_list.selectedItems())
-        self.convert_button.setEnabled(selected)
+        has_output_dir = self.output_dir is not None
+        self.convert_button.setEnabled(selected and has_output_dir)
         if selected:
             self.current_timestamp = self.file_list.selectedItems()[0].text()
             self.reset_status()
 
     def start_conversion(self):
         selected_items = self.file_list.selectedItems()
-        if not selected_items:
+        if not selected_items or not self.output_dir:
             return
         timestamp = selected_items[0].text()
         self.current_timestamp = timestamp
@@ -120,7 +159,9 @@ class MainWindow(QMainWindow):
         if self.input_dir:
             self.convert_button.setEnabled(False)
             self.file_list.setEnabled(False)
-            self.video_processor.process_videos(self.input_dir, timestamp)
+            self.input_dir_button.setEnabled(False)
+            self.output_dir_button.setEnabled(False)
+            self.video_processor.process_videos(self.input_dir, self.output_dir, timestamp)
 
     def reset_status(self):
         """Reset all file labels, progress bars, and percentage labels to initial state."""
@@ -160,6 +201,8 @@ class MainWindow(QMainWindow):
             if self.conversion_count >= (4 - len(self.missing_cameras)):
                 self.convert_button.setEnabled(True)
                 self.file_list.setEnabled(True)
+                self.input_dir_button.setEnabled(True)
+                self.output_dir_button.setEnabled(True)
                 self.conversion_count = 0
                 logger.info("All conversions completed")
 

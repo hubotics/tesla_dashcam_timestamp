@@ -19,6 +19,8 @@ def process_video(
 ) -> None:
     """Run ffmpeg conversion in a separate process and send progress to queue."""
     try:
+        # Ensure output directory exists
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         cmd = [
             "ffmpeg",
             "-i",
@@ -50,7 +52,7 @@ class VideoProcessor(QObject):
         self.active_processes: int = 0
         self.completed_cameras: set[str] = set()
 
-    def process_videos(self, input_dir: Path, timestamp: str) -> None:
+    def process_videos(self, input_dir: Path, output_dir: Path, timestamp: str) -> None:
         """Start parallel video processing for all camera files."""
         cameras = ["back", "front", "left_repeater", "right_repeater"]
         timestamp_epoch = self._timestamp_to_epoch(timestamp)
@@ -60,7 +62,7 @@ class VideoProcessor(QObject):
 
         for camera in cameras:
             input_file = input_dir / f"{timestamp}-{camera}.mp4"
-            output_file = input_dir / f"{timestamp}-{camera}.output.mp4"
+            output_file = output_dir / f"{timestamp}-{camera}.mp4"
             if input_file.exists():
                 process = Process(
                     target=process_video,
